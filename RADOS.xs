@@ -136,19 +136,14 @@ CODE:
         }
         snprintf(msg, sizeof(msg), "mon_command failed - %.*s\n", (int)outslen, outs);
         rados_buffer_free(outs);
-        if (outbuf != NULL) {
-            rados_buffer_free(outbuf);
-        }
+        rados_buffer_free(outbuf);
         die(msg);
     }
 
     RETVAL = newSVpv(outbuf, outbuflen);
 
     rados_buffer_free(outbuf);
-
-    if (outs != NULL) {
-	rados_buffer_free(outs);
-    }
+    rados_buffer_free(outs);
 }
 OUTPUT: RETVAL
 
