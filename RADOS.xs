@@ -124,10 +124,17 @@ CODE:
         cmdlen++;
     }
 
-    int ret = rados_mon_command(cluster, cmd, cmdlen,
-                                NULL, 0,
-                                &outbuf, &outbuflen,
-                                &outs, &outslen);
+    int ret = rados_mon_command(
+        cluster,
+        cmd,
+        cmdlen,
+        NULL,
+        0,
+        &outbuf,
+        &outbuflen,
+        &outs,
+        &outslen
+    );
 
     if (ret < 0) {
         char msg[4096];
