@@ -98,7 +98,7 @@ CODE:
     rados_shutdown(cluster);
 }
 
-SV *
+HV *
 pve_rados_mon_command(cluster, cmds)
 rados_t cluster
 AV *cmds
@@ -136,18 +136,12 @@ CODE:
         &outslen
     );
 
-    if (ret < 0) {
-        char msg[4096];
-        if (outslen > sizeof(msg)) {
-            outslen = sizeof(msg);
-        }
-        snprintf(msg, sizeof(msg), "mon_command failed - %.*s\n", (int)outslen, outs);
-        rados_buffer_free(outs);
-        rados_buffer_free(outbuf);
-        die(msg);
-    }
+    HV * rh = (HV *)sv_2mortal((SV *)newHV());
 
-    RETVAL = newSVpv(outbuf, outbuflen);
+    (void)hv_store(rh, "return_code", 11, newSViv(ret), 0);
+    (void)hv_store(rh, "status_message", 14, newSVpv(outs, outslen), 0);
+    (void)hv_store(rh, "data", 4, newSVpv(outbuf, outbuflen), 0);
+    RETVAL = rh;
 
     rados_buffer_free(outbuf);
     rados_buffer_free(outs);

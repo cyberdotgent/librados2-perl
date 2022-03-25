@@ -201,7 +201,7 @@ sub new {
 	    my $res;
 	    eval {
 		if ($cmd eq 'M') { # rados monitor commands
-		    $res = pve_rados_mon_command($self->{conn}, [ $data ]);
+		    $res = encode_json(pve_rados_mon_command($self->{conn}, [ $data ]));
 		} elsif ($cmd eq 'C') { # class methods
 		    my $aref = decode_json($data);
 		    my $method = shift @$aref;
@@ -265,13 +265,25 @@ sub mon_command {
 
     my $json = encode_json($cmd);
 
-    my $raw = eval { $sendcmd->($self, 'M', $json) };
+    my $ret = $sendcmd->($self, 'M', $json);
     die "error with '$cmd->{prefix}': $@" if $@;
 
+    my $raw = decode_json($ret);
+
+    die "error with '$cmd->{prefix}': mon_command failed - $raw->{status_message}\n"
+	if $raw->{return_code} < 0;
+
+    my $data = '';
     if ($cmd->{format} && $cmd->{format} eq 'json') {
-	return length($raw) ? decode_json($raw) : undef;
+	$data = length($raw->{data}) ? decode_json($raw->{data}) : undef;
+    } else {
+	$data = $raw->{data};
     }
-    return $raw;
+    return {
+	return_code => $raw->{return_code},
+	status_message => $raw->{status_message},
+	data => $data,
+    };
 }
 
 
