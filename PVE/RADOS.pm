@@ -259,7 +259,9 @@ sub cluster_stat {
 # example1: { prefix => 'get_command_descriptions'})
 # example2: { prefix => 'mon dump', format => 'json' }
 sub mon_command {
-    my ($self, $cmd) = @_;
+    my ($self, $cmd, $noerr) = @_;
+
+    $noerr = 0 if !$noerr;
 
     $cmd->{format} = 'json' if !$cmd->{format};
 
@@ -271,7 +273,7 @@ sub mon_command {
     my $raw = decode_json($ret);
 
     die "error with '$cmd->{prefix}': mon_command failed - $raw->{status_message}\n"
-	if $raw->{return_code} < 0;
+	if !$noerr && $raw->{return_code} < 0;
 
     my $data = '';
     if ($cmd->{format} && $cmd->{format} eq 'json') {
