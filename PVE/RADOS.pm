@@ -242,10 +242,8 @@ sub cluster_stat {
 
 # example1: { prefix => 'get_command_descriptions'})
 # example2: { prefix => 'mon dump', format => 'json' }
-sub mon_command {
-    my ($self, $cmd, $noerr) = @_;
-
-    $noerr = 0 if !$noerr;
+sub mon_cmd {
+    my ($self, $cmd, $no_result_catch) = @_;
 
     $cmd->{format} = 'json' if !$cmd->{format};
 
@@ -256,8 +254,8 @@ sub mon_command {
 
     my $raw = decode_json($ret);
 
-    die "error with '$cmd->{prefix}': mon_command failed - $raw->{status_message}\n"
-	if !$noerr && $raw->{return_code} < 0;
+    die "error with '$cmd->{prefix}': mon_cmd failed - $raw->{status_message}\n"
+	if !$no_result_catch && $raw->{return_code} < 0;
 
     my $data = '';
     if ($cmd->{format} && $cmd->{format} eq 'json') {
@@ -272,6 +270,14 @@ sub mon_command {
     };
 }
 
+# for backward compatibillity or if one just doesn't care about actual RADOS error details
+sub mon_command {
+    my ($self, $cmd) = @_;
+
+    my $res = mon_cmd($self, $cmd);
+
+    return $res->{data};
+}
 
 1;
 __END__
