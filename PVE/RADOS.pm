@@ -284,7 +284,7 @@ PVE::RADOS - Perl bindings for librados
 
   use PVE::RADOS;
 
-  my $rados = PVE::RADOS::new();
+  my $rados = PVE::RADOS->new();
   my $stat = $rados->cluster_stat();
   my $res = $rados->mon_command({ prefix => 'mon dump', format => 'json' });
 
@@ -299,5 +299,7 @@ None by default.
 =head1 AUTHOR
 
 Dietmar Maurer, E<lt>dietmar@proxmox.com<gt>
+Thomas Lamprecht E<lt>t.lamprecht@proxmox.com<gt>
+Wolfgang Bumiller E<lt>w.bumiller@proxmox.com<gt>
 
 =cut
