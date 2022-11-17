@@ -117,7 +117,7 @@ sub new {
 
     die "unable to fork - $!\n" if !defined($cpid);
 
-    my $self = bless {};
+    my $self = bless {}, $class;
 
     my $timeout = delete $params{timeout} || $rados_default_timeout;
 
