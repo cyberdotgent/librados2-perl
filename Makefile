@@ -70,8 +70,7 @@ $(DSC): $(BUILDSRC)
 
 .PHONY: clean
 clean:
-	rm -rf *~ build *.deb *.changes *.buildinfo *.dsc *.tar.gz
-	find . -name '*~' -exec rm {} ';'
+	rm -rf $(PACKAGE)-[0-9]*/ *.deb *.changes *.buildinfo *.build *.tar.?z *.dsc
 
 .PHONY: distclean
 distclean: clean
