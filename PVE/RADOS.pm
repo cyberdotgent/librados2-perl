@@ -201,6 +201,11 @@ sub new {
 	    &$atfork();
 	}
 
+	# override signal handlers inherited from the parent
+	local $SIG{HUP} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
+	    exit(1);
+	};
+
 	# fixme: timeout?
 
 	close $child;
