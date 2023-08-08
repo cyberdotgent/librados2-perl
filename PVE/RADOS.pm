@@ -7,6 +7,7 @@ use warnings;
 
 use Carp;
 use JSON;
+use POSIX;
 use Socket;
 
 use PVE::Tools;
@@ -195,24 +196,30 @@ sub new {
     } else { # child
 	$0 = 'pverados';
 
-	PVE::INotify::inotify_close();
+	eval {
+	    PVE::INotify::inotify_close();
 
-	if (my $atfork = $rpcenv->{atfork}) {
-	    &$atfork();
-	}
+	    if (my $atfork = $rpcenv->{atfork}) {
+		&$atfork();
+	    }
 
-	# override signal handlers inherited from the parent
-	local $SIG{HUP} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
-	    exit(1);
+	    # override signal handlers inherited from the parent
+	    local $SIG{HUP} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
+		pve_rados_shutdown($self->{conn}) if $self->{conn};
+		POSIX::_exit(1);
+	    };
+
+	    # fixme: timeout?
+
+	    close $child;
+
+	    $self->pve_rados_work($parent, $timeout, %params);
 	};
+	my $err = $@;
+	warn $err if $err;
 
-	# fixme: timeout?
-
-	close $child;
-
-	$self->pve_rados_work($parent, $timeout, %params);
-
-	exit(0);
+	pve_rados_shutdown($self->{conn}) if $self->{conn};
+	POSIX::_exit($err ? 1 : 0);
     }
 
     return $self;
@@ -233,9 +240,6 @@ sub DESTROY {
 	#print "$$: DESTROY WAIT0\n";
 	&$kill_worker($self);
 	#print "$$: DESTROY WAIT\n";
-    } else {
-	#print "$$: DESTROY SHUTDOWN\n";
-	pve_rados_shutdown($self->{conn}) if $self->{conn};
     }
 }
 
