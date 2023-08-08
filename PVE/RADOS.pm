@@ -105,6 +105,66 @@ my $sendcmd = sub {
     return $raw;
 };
 
+sub pve_rados_work {
+    my ($self, $parent, $timeout, %params) = @_;
+
+    my $conn;
+    eval {
+	my $ceph_user = delete $params{userid} || $ceph_default_user;
+	$conn = pve_rados_create($ceph_user) ||
+	    die "unable to create RADOS object\n";
+
+	if (defined($params{ceph_conf}) && (!-e $params{ceph_conf})) {
+	    die "Supplied ceph config doesn't exist, $params{ceph_conf}\n";
+	}
+
+	my $ceph_conf = delete $params{ceph_conf} || $ceph_default_conf;
+
+	if (-e $ceph_conf) {
+	    pve_rados_conf_read_file($conn, $ceph_conf);
+	}
+
+	pve_rados_conf_set($conn, 'client_mount_timeout', $timeout);
+
+	foreach my $k (keys %params) {
+	    pve_rados_conf_set($conn, $k, $params{$k});
+	}
+
+	pve_rados_connect($conn);
+    };
+    if (my $err = $@) {
+	&$writedata($parent, 'E', $err);
+	die $err;
+    }
+    &$writedata($parent, 'S');
+
+    $self->{conn} = $conn;
+
+    for (;;) {
+	my ($cmd, $data) = &$readdata($parent, 1);
+
+	last if !$cmd || $cmd eq 'Q';
+
+	my $res;
+	eval {
+	    if ($cmd eq 'M') { # rados monitor commands
+		$res = encode_json(pve_rados_mon_command($self->{conn}, [ $data ]));
+	    } elsif ($cmd eq 'C') { # class methods
+		my $aref = decode_json($data);
+		my $method = shift @$aref;
+		$res = encode_json($self->$method(@$aref));
+	    } else {
+		die "invalid command\n";
+	    }
+	};
+	if (my $err = $@) {
+	    &$writedata($parent, 'E', $err);
+	    die $err;
+	}
+	&$writedata($parent, '>', $res);
+    }
+}
+
 sub new {
     my ($class, %params) = @_;
 
@@ -145,61 +205,7 @@ sub new {
 
 	close $child;
 
-	my $conn;
-	eval {
-	    my $ceph_user = delete $params{userid} || $ceph_default_user;
-	    $conn = pve_rados_create($ceph_user) ||
-		die "unable to create RADOS object\n";
-
-	    if (defined($params{ceph_conf}) && (!-e $params{ceph_conf})) {
-		die "Supplied ceph config doesn't exist, $params{ceph_conf}\n";
-	    }
-
-	    my $ceph_conf = delete $params{ceph_conf} || $ceph_default_conf;
-
-	    if (-e $ceph_conf) {
-		pve_rados_conf_read_file($conn, $ceph_conf);
-	    }
-
-	    pve_rados_conf_set($conn, 'client_mount_timeout', $timeout);
-
-	    foreach my $k (keys %params) {
-		pve_rados_conf_set($conn, $k, $params{$k});
-	    }
-
-	    pve_rados_connect($conn);
-	};
-	if (my $err = $@) {
-	    &$writedata($parent, 'E', $err);
-	    die $err;
-	}
-	&$writedata($parent, 'S');
-
-	$self->{conn} = $conn;
-
-	for (;;) {
-	    my ($cmd, $data) = &$readdata($parent, 1);
-
-	    last if !$cmd || $cmd eq 'Q';
-
-	    my $res;
-	    eval {
-		if ($cmd eq 'M') { # rados monitor commands
-		    $res = encode_json(pve_rados_mon_command($self->{conn}, [ $data ]));
-		} elsif ($cmd eq 'C') { # class methods
-		    my $aref = decode_json($data);
-		    my $method = shift @$aref;
-		    $res = encode_json($self->$method(@$aref));
-		} else {
-		    die "invalid command\n";
-		}
-	    };
-	    if (my $err = $@) {
-		&$writedata($parent, 'E', $err);
-		die $err;
-	    }
-	    &$writedata($parent, '>', $res);
-	}
+	$self->pve_rados_work($parent, $timeout, %params);
 
 	exit(0);
     }
