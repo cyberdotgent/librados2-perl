@@ -1,3 +1,13 @@
+librados2-perl (1.4.1) bookworm; urgency=medium
+
+  * refactor out rados worker into dedicated function
+
+  * reset signal handlers in rados worker
+
+  * use _exit in the rados worker to avoid unintended cleanup handlers
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 11 Aug 2023 09:06:00 +0200
+
 librados2-perl (1.4.0) bookworm; urgency=medium
 
   * rebuild for Debian 12 Bookworm / Proxmox VE 8.x
