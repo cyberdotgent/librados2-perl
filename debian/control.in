@@ -3,7 +3,7 @@ Section: perl
 Priority: optional
 Maintainer: Proxmox Support Team <support@proxmox.com>
 Build-Depends: debhelper-compat (= 13),
-               librados-dev,
+               librados-dev (>= 19.2.0~),
 Standards-Version: 4.6.2
 Homepage: https://www.proxmox.com/
 
