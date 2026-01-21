@@ -76,5 +76,6 @@ clean:
 distclean: clean
 
 .PHONY: upload
+upload: UPLOAD_DIST ?= $(DEB_DISTRIBUTION)
 upload: $(DEB)
-	tar cf - $(DEB) | ssh repoman@repo.proxmox.com -- upload --product pve --dist bookworm --arch $(DEB_BUILD_ARCH)
+	tar cf - $(DEB) | ssh repoman@repo.proxmox.com -- upload --product pve --dist $(UPLOAD_DIST) --arch $(DEB_BUILD_ARCH)
