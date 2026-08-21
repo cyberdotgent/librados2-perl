@@ -65,6 +65,10 @@ my $readdata = sub {
 my $kill_worker = sub {
     my ($self) = @_;
 
+    # reaping the worker sets $?, and this runs from DESTROY, so without localizing it a
+    # handle that is still alive at exit replaces the status the caller meant to return
+    local $?;
+
     return if !$self->{cpid};
     return if  $self->{__already_killed};
 
