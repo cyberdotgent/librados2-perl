@@ -1,3 +1,12 @@
+librados2-perl (1.5.1) trixie; urgency=medium
+
+  * fix the exit status of programs using this module being replaced by the
+    reaped rados worker. A program that still held a handle at exit returned
+    9 regardless of its outcome, which affected 'pveceph' and the ceph-crash
+    init helper of Proxmox VE.
+
+ -- Proxmox Support Team <support@proxmox.com>  Sat, 22 Aug 2026 18:21:47 +0200
+
 librados2-perl (1.5.0) trixie; urgency=medium
 
   * rebuild for Debian 13 "Trixie" based Proxmox VE 9 release.
